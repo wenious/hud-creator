@@ -6,18 +6,19 @@
   <title>1Click HUD Studio - Visual Builder</title>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', sans-serif; }
-    body { display: flex; height: 100vh; background: #121214; color: #e1e1e6; }
-    #sidebar { width: 320px; background: #202024; padding: 20px; border-right: 1px solid #323238; display: flex; flex-direction: column; gap: 16px; }
-    #canvas-container { flex: 1; display: flex; align-items: center; justify-content: center; background: #09090a; position: relative; overflow: hidden; }
+    body { display: flex; height: 100vh; background: #121214; color: #e1e1e6; user-select: none; }
+    #sidebar { width: 320px; background: #202024; padding: 20px; border-right: 1px solid #323238; display: flex; flex-direction: column; gap: 14px; z-index: 10; }
+    #canvas-container { flex: 1; display: flex; align-items: center; justify-content: center; background: #09090a; position: relative; }
     canvas { background: #18181b; border: 2px dashed #3f3f46; border-radius: 8px; cursor: crosshair; }
     h2 { font-size: 1.1rem; color: #00b37e; text-transform: uppercase; letter-spacing: 1px; }
-    label { font-size: 0.85rem; color: #a8a8b3; }
-    input, select, button { width: 100%; padding: 10px; border-radius: 6px; border: 1px solid #323238; background: #121214; color: #fff; outline: none; }
-    button { background: #00b37e; border: none; font-weight: bold; cursor: pointer; transition: 0.2s; }
+    label { font-size: 0.8rem; color: #a8a8b3; }
+    input, select, button { width: 100%; padding: 8px 12px; border-radius: 6px; border: 1px solid #323238; background: #121214; color: #fff; outline: none; }
+    button { background: #00b37e; border: none; font-weight: bold; cursor: pointer; transition: 0.2s; padding: 10px; }
     button:hover { background: #00875f; }
-    .btn-secondary { background: #323238; }
-    .btn-secondary:hover { background: #3f3f46; }
-    textarea { width: 100%; height: 100px; background: #121214; border: 1px solid #323238; color: #00b37e; font-family: monospace; font-size: 0.8rem; padding: 8px; border-radius: 6px; resize: none; }
+    .btn-danger { background: #e54242; }
+    .btn-danger:hover { background: #c53030; }
+    textarea { width: 100%; height: 90px; background: #121214; border: 1px solid #323238; color: #00b37e; font-family: monospace; font-size: 0.75rem; padding: 8px; border-radius: 6px; resize: none; }
+    .shortcuts-info { font-size: 0.75rem; color: #7c7c8a; line-height: 1.4; background: #18181b; padding: 8px; border-radius: 6px; }
   </style>
 </head>
 <body>
@@ -44,11 +45,19 @@
       <input type="text" id="action-data" placeholder="e.g. uuid or <1,0,0>">
     </div>
 
-    <button id="add-btn" class="btn-secondary">+ Add Button Mode</button>
     <button id="export-btn">Generate HUD Config</button>
+    <button id="clear-btn" class="btn-danger">Clear All</button>
 
     <label>Generated Payload</label>
     <textarea id="output-box" readonly placeholder="Output string will appear here..."></textarea>
+
+    <div class="shortcuts-info">
+      <b>Shortcuts:</b><br>
+      • Ctrl + Z: Undo<br>
+      • Ctrl + C / V: Copy / Paste<br>
+      • Ctrl + D: Duplicate<br>
+      • Del / Backspace: Delete Selected
+    </div>
   </div>
 
   <div id="canvas-container">
@@ -59,15 +68,24 @@
     const canvas = document.getElementById('hud-canvas');
     const ctx = canvas.getContext('2d');
     let buttons = [];
+    let history = [];
+    let clipboard = null;
+    let selectedIndex = -1;
     let isDrawing = false;
     let startX = 0, startY = 0;
+
+    function saveState() {
+      history.push(JSON.stringify(buttons));
+      if (history.length > 30) history.shift();
+    }
 
     function render() {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
       buttons.forEach((btn, index) => {
-        ctx.fillStyle = 'rgba(0, 179, 126, 0.3)';
-        ctx.strokeStyle = '#00b37e';
-        ctx.lineWidth = 2;
+        const isSelected = index === selectedIndex;
+        ctx.fillStyle = isSelected ? 'rgba(229, 66, 66, 0.3)' : 'rgba(0, 179, 126, 0.3)';
+        ctx.strokeStyle = isSelected ? '#e54242' : '#00b37e';
+        ctx.lineWidth = isSelected ? 3 : 2;
         ctx.fillRect(btn.x, btn.y, btn.w, btn.h);
         ctx.strokeRect(btn.x, btn.y, btn.w, btn.h);
         ctx.fillStyle = '#ffffff';
@@ -76,51 +94,127 @@
       });
     }
 
-    canvas.addEventListener('mousedown', (e) => {
+    function getMousePos(e) {
       const rect = canvas.getBoundingClientRect();
-      startX = e.clientX - rect.left;
-      startY = e.clientY - rect.top;
+      return { x: e.clientX - rect.left, y: e.clientY - rect.top };
+    }
+
+    canvas.addEventListener('mousedown', (e) => {
+      const pos = getMousePos(e);
+      // check if clicked on existing button
+      let clickedIndex = -1;
+      for (let i = buttons.length - 1; i >= 0; i--) {
+        const b = buttons[i];
+        if (pos.x >= b.x && pos.x <= b.x + b.w && pos.y >= b.y && pos.y <= b.y + b.h) {
+          clickedIndex = i;
+          break;
+        }
+      }
+
+      if (clickedIndex !== -1) {
+        selectedIndex = clickedIndex;
+        render();
+        return;
+      }
+
+      selectedIndex = -1;
+      startX = pos.x;
+      startY = pos.y;
       isDrawing = true;
+      render();
     });
 
     canvas.addEventListener('mouseup', (e) => {
       if (!isDrawing) return;
       isDrawing = false;
-      const rect = canvas.getBoundingClientRect();
-      const endX = e.clientX - rect.left;
-      const endY = e.clientY - rect.top;
-
-      const w = endX - startX;
-      const h = endY - startY;
+      const pos = getMousePos(e);
+      const w = pos.x - startX;
+      const h = pos.y - startY;
 
       if (Math.abs(w) > 15 && Math.abs(h) > 15) {
+        saveState();
         buttons.push({
           id: `btn_${buttons.length + 1}`,
-          x: Math.min(startX, endX),
-          y: Math.min(startY, endY),
+          x: Math.min(startX, pos.x),
+          y: Math.min(startY, pos.y),
           w: Math.abs(w),
           h: Math.abs(h),
           action: document.getElementById('action-type').value,
           face: document.getElementById('target-face').value || 'ALL',
           data: document.getElementById('action-data').value || '00000000-0000-0000-0000-000000000000'
         });
+        selectedIndex = buttons.length - 1;
         render();
       }
     });
 
-    // keyboard shortcut: duplicate last button
     window.addEventListener('keydown', (e) => {
-      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'd') {
+      const isCtrl = e.ctrlKey || e.metaKey;
+
+      // Undo: Ctrl + Z
+      if (isCtrl && e.key.toLowerCase() === 'z') {
         e.preventDefault();
-        if (buttons.length > 0) {
-          const last = buttons[buttons.length - 1];
-          buttons.push({ ...last, id: `btn_${buttons.length + 1}`, x: last.x + 20, y: last.y + 20 });
+        if (history.length > 0) {
+          buttons = JSON.parse(history.pop());
+          selectedIndex = -1;
+          render();
+        }
+      }
+
+      // Copy: Ctrl + C
+      if (isCtrl && e.key.toLowerCase() === 'c') {
+        if (selectedIndex !== -1 && buttons[selectedIndex]) {
+          clipboard = { ...buttons[selectedIndex] };
+        }
+      }
+
+      // Paste: Ctrl + V
+      if (isCtrl && e.key.toLowerCase() === 'v') {
+        if (clipboard) {
+          saveState();
+          buttons.push({
+            ...clipboard,
+            id: `btn_${buttons.length + 1}`,
+            x: clipboard.x + 20,
+            y: clipboard.y + 20
+          });
+          selectedIndex = buttons.length - 1;
+          render();
+        }
+      }
+
+      // Duplicate: Ctrl + D
+      if (isCtrl && e.key.toLowerCase() === 'd') {
+        e.preventDefault();
+        if (selectedIndex !== -1 && buttons[selectedIndex]) {
+          saveState();
+          const target = buttons[selectedIndex];
+          buttons.push({ ...target, id: `btn_${buttons.length + 1}`, x: target.x + 15, y: target.y + 15 });
+          selectedIndex = buttons.length - 1;
+          render();
+        }
+      }
+
+      // Delete: Delete or Backspace
+      if (e.key === 'Delete' || e.key === 'Backspace') {
+        if (selectedIndex !== -1 && document.activeElement.tagName !== 'INPUT' && document.activeElement.tagName !== 'TEXTAREA') {
+          e.preventDefault();
+          saveState();
+          buttons.splice(selectedIndex, 1);
+          selectedIndex = -1;
           render();
         }
       }
     });
 
-    // export configuration payload for sl lsl engine
+    document.getElementById('clear-btn').addEventListener('click', () => {
+      if (buttons.length === 0) return;
+      saveState();
+      buttons = [];
+      selectedIndex = -1;
+      render();
+    });
+
     document.getElementById('export-btn').addEventListener('click', () => {
       let outputLines = [];
       buttons.forEach(btn => {
