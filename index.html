@@ -51,8 +51,8 @@
 
     <div class="section-title">Selected Button Properties</div>
     <div>
-      <label>Button ID</label>
-      <input type="text" id="btn-id" readonly placeholder="Select a button">
+      <label>Button ID (SL Prim Name)</label>
+      <input type="text" id="btn-id" placeholder="e.g. red_btn or BTN_1">
     </div>
 
     <div>
@@ -93,11 +93,10 @@
 
     <div class="shortcuts-box">
       <b>Controls:</b><br>
-      • <b>Click Button</b>: Edit color/data on sidebar<br>
+      • <b>Click Button</b>: Edit name, color or data<br>
       • <b>Drag Empty</b>: Draw new button<br>
       • <b>Drag Button</b>: Move position<br>
-      • <b>Ctrl + D</b>: Duplicate selected<br>
-      • <b>Ctrl + Z</b>: Undo | <b>Del</b>: Delete
+      • <b>Ctrl + D</b>: Duplicate | <b>Ctrl + Z</b>: Undo
     </div>
   </div>
 
@@ -163,6 +162,15 @@
         statusText.innerText = 'No button selected';
       }
     }
+
+    // Isim degistirme tetikleyicisi
+    btnIdInput.addEventListener('input', () => {
+      if (selectedIndex !== -1 && buttons[selectedIndex]) {
+        buttons[selectedIndex].id = btnIdInput.value;
+        statusText.innerText = `Active: ${btnIdInput.value}`;
+        render();
+      }
+    });
 
     colorPicker.addEventListener('input', () => {
       hexLabel.innerText = colorPicker.value;
@@ -336,6 +344,7 @@
       const isCtrl = e.ctrlKey || e.metaKey;
 
       if (isCtrl && e.key.toLowerCase() === 'z') {
+        if (document.activeElement.tagName === 'INPUT' || document.activeElement.tagName === 'TEXTAREA') return;
         e.preventDefault();
         if (history.length > 0) {
           buttons = JSON.parse(history.pop());
@@ -346,13 +355,14 @@
       }
 
       if (isCtrl && e.key.toLowerCase() === 'd') {
+        if (document.activeElement.tagName === 'INPUT' || document.activeElement.tagName === 'TEXTAREA') return;
         e.preventDefault();
         if (selectedIndex !== -1 && buttons[selectedIndex]) {
           saveState();
           const target = buttons[selectedIndex];
           buttons.push({ 
             ...target, 
-            id: `btn_${buttons.length + 1}`, 
+            id: `${target.id}_copy`, 
             x: target.x + 20, 
             y: target.y + 20 
           });
