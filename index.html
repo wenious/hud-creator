@@ -17,7 +17,9 @@
     label { font-size: 0.8rem; color: #94a3b8; display: block; margin-bottom: 4px; }
     input[type="text"], input[type="file"], select, textarea { width: 100%; padding: 8px 10px; border-radius: 6px; border: 1px solid #2a2f42; background: #0f1117; color: #f8fafc; font-size: 0.85rem; outline: none; }
     input[type="text"]:focus, select:focus { border-color: #10b981; }
-    input[type="color"] { width: 100%; height: 36px; border-radius: 6px; border: 1px solid #2a2f42; background: #0f1117; cursor: pointer; }
+    
+    .color-row { display: flex; gap: 8px; align-items: center; }
+    input[type="color"] { width: 50px; height: 38px; border-radius: 6px; border: 1px solid #2a2f42; background: #0f1117; cursor: pointer; padding: 2px; }
 
     .btn-group { display: flex; gap: 8px; }
     button { flex: 1; background: #10b981; color: #fff; border: none; font-weight: 600; font-size: 0.85rem; padding: 10px; border-radius: 6px; cursor: pointer; transition: 0.15s; }
@@ -54,10 +56,18 @@
     <div>
       <label>Action Type</label>
       <select id="action-type">
-        <option value="TEX">Texture (UUID)</option>
         <option value="COL">Color (RGB Tint)</option>
+        <option value="TEX">Texture (UUID)</option>
         <option value="ALP">Alpha (Opacity)</option>
       </select>
+    </div>
+
+    <div>
+      <label>Color Picker (Click Box)</label>
+      <div class="color-row">
+        <input type="color" id="color-picker" value="#ff0000">
+        <span style="font-size: 0.8rem; color: #94a3b8;">Choose Tint</span>
+      </div>
     </div>
 
     <div>
@@ -65,14 +75,9 @@
       <input type="text" id="target-face" value="ALL" placeholder="ALL or face index (0,1..)">
     </div>
 
-    <div id="payload-container">
-      <label>Texture UUID</label>
-      <input type="text" id="action-data" placeholder="00000000-0000-0000-0000-000000000000">
-    </div>
-
-    <div id="color-picker-box" style="display: none;">
-      <label>Pick Color</label>
-      <input type="color" id="color-picker" value="#ff0000">
+    <div>
+      <label>Payload (UUID / Vector / Value)</label>
+      <input type="text" id="action-data" value="<1.000, 0.000, 0.000>">
     </div>
 
     <div class="btn-group">
@@ -85,12 +90,12 @@
     <textarea id="output-box" readonly placeholder="Output string will appear here..."></textarea>
 
     <div class="shortcuts-box">
-      <b>Pro Shortcuts:</b><br>
-      • <b>Drag</b> on empty space: Draw new button<br>
-      • <b>Drag</b> existing button: Move position<br>
-      • <b>Ctrl + D</b>: Duplicate selected<br>
-      • <b>Ctrl + Z</b>: Undo action<br>
-      • <b>Del</b>: Delete selected button
+      <b>Shortcuts:</b><br>
+      • <b>Drag</b> empty space: Draw button<br>
+      • <b>Drag</b> button: Move position<br>
+      • <b>Ctrl + D</b>: Duplicate<br>
+      • <b>Ctrl + Z</b>: Undo<br>
+      • <b>Del</b>: Delete selected
     </div>
   </div>
 
@@ -118,37 +123,31 @@
     let dragOffsetX = 0, dragOffsetY = 0;
     let startX = 0, startY = 0;
 
-    // UI Elements
     const actionType = document.getElementById('action-type');
     const targetFace = document.getElementById('target-face');
     const actionData = document.getElementById('action-data');
-    const colorPickerBox = document.getElementById('color-picker-box');
     const colorPicker = document.getElementById('color-picker');
-    const payloadContainer = document.getElementById('payload-container');
     const statusText = document.getElementById('status-text');
 
-    actionType.addEventListener('change', () => {
-      if (actionType.value === 'COL') {
-        colorPickerBox.style.display = 'block';
-        payloadContainer.style.display = 'none';
-        updateColorPayload();
-      } else {
-        colorPickerBox.style.display = 'none';
-        payloadContainer.style.display = 'block';
-      }
-      syncSelectedButton();
-    });
-
-    colorPicker.addEventListener('input', updateColorPayload);
-
-    function updateColorPayload() {
-      const hex = colorPicker.value;
+    function hexToSLVector(hex) {
       const r = (parseInt(hex.substr(1,2), 16) / 255).toFixed(3);
       const g = (parseInt(hex.substr(3,2), 16) / 255).toFixed(3);
       const b = (parseInt(hex.substr(5,2), 16) / 255).toFixed(3);
-      actionData.value = `<${r}, ${g}, ${b}>`;
-      syncSelectedButton();
+      return `<${r}, ${g}, ${b}>`;
     }
+
+    colorPicker.addEventListener('input', () => {
+      actionType.value = 'COL';
+      actionData.value = hexToSLVector(colorPicker.value);
+      syncSelectedButton();
+    });
+
+    actionType.addEventListener('change', () => {
+      if (actionType.value === 'COL') {
+        actionData.value = hexToSLVector(colorPicker.value);
+      }
+      syncSelectedButton();
+    });
 
     targetFace.addEventListener('input', syncSelectedButton);
     actionData.addEventListener('input', syncSelectedButton);
@@ -162,7 +161,6 @@
       }
     }
 
-    // BG Image Loader
     document.getElementById('bg-upload').addEventListener('change', (e) => {
       const file = e.target.files[0];
       if (file) {
@@ -190,7 +188,7 @@
 
       buttons.forEach((btn, index) => {
         const isSelected = index === selectedIndex;
-        ctx.fillStyle = isSelected ? 'rgba(16, 185, 129, 0.4)' : 'rgba(59, 130, 246, 0.3)';
+        ctx.fillStyle = isSelected ? 'rgba(16, 185, 129, 0.45)' : 'rgba(59, 130, 246, 0.35)';
         ctx.strokeStyle = isSelected ? '#10b981' : '#3b82f6';
         ctx.lineWidth = isSelected ? 3 : 1.5;
 
@@ -226,12 +224,10 @@
         dragOffsetX = pos.x - buttons[clicked].x;
         dragOffsetY = pos.y - buttons[clicked].y;
         
-        // update inspector
         const b = buttons[clicked];
         actionType.value = b.action;
         targetFace.value = b.face;
         actionData.value = b.data;
-        actionType.dispatchEvent(new Event('change'));
 
         statusText.innerText = `Selected: ${b.id}`;
         render();
@@ -275,7 +271,7 @@
             h: Math.abs(h),
             action: actionType.value,
             face: targetFace.value || 'ALL',
-            data: actionData.value || '00000000-0000-0000-0000-000000000000'
+            data: actionData.value || '<1.000, 0.000, 0.000>'
           };
           buttons.push(newBtn);
           selectedIndex = buttons.length - 1;
