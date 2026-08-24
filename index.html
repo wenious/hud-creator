@@ -3,29 +3,54 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>1Click HUD Studio - Visual Builder</title>
+  <title>1Click HUD Studio - Pro Visual Suite</title>
   <style>
-    * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', sans-serif; }
-    body { display: flex; height: 100vh; background: #121214; color: #e1e1e6; user-select: none; }
-    #sidebar { width: 320px; background: #202024; padding: 20px; border-right: 1px solid #323238; display: flex; flex-direction: column; gap: 14px; z-index: 10; }
-    #canvas-container { flex: 1; display: flex; align-items: center; justify-content: center; background: #09090a; position: relative; }
-    canvas { background: #18181b; border: 2px dashed #3f3f46; border-radius: 8px; cursor: crosshair; }
-    h2 { font-size: 1.1rem; color: #00b37e; text-transform: uppercase; letter-spacing: 1px; }
-    label { font-size: 0.8rem; color: #a8a8b3; }
-    input, select, button { width: 100%; padding: 8px 12px; border-radius: 6px; border: 1px solid #323238; background: #121214; color: #fff; outline: none; }
-    button { background: #00b37e; border: none; font-weight: bold; cursor: pointer; transition: 0.2s; padding: 10px; }
-    button:hover { background: #00875f; }
-    .btn-danger { background: #e54242; }
-    .btn-danger:hover { background: #c53030; }
-    textarea { width: 100%; height: 90px; background: #121214; border: 1px solid #323238; color: #00b37e; font-family: monospace; font-size: 0.75rem; padding: 8px; border-radius: 6px; resize: none; }
-    .shortcuts-info { font-size: 0.75rem; color: #7c7c8a; line-height: 1.4; background: #18181b; padding: 8px; border-radius: 6px; }
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; }
+    body { display: flex; height: 100vh; background: #0f1117; color: #e1e7ec; user-select: none; overflow: hidden; }
+    
+    /* SIDEBAR */
+    #sidebar { width: 340px; background: #161922; padding: 20px; border-right: 1px solid #232734; display: flex; flex-direction: column; gap: 14px; overflow-y: auto; z-index: 10; box-shadow: 2px 0 10px rgba(0,0,0,0.3); }
+    h2 { font-size: 1.1rem; color: #10b981; font-weight: 700; display: flex; align-items: center; gap: 8px; }
+    .badge { font-size: 0.65rem; background: #10b98122; color: #10b981; padding: 2px 6px; border-radius: 4px; border: 1px solid #10b98155; }
+    
+    .section-title { font-size: 0.75rem; text-transform: uppercase; color: #64748b; font-weight: 700; margin-top: 6px; letter-spacing: 0.5px; }
+    label { font-size: 0.8rem; color: #94a3b8; display: block; margin-bottom: 4px; }
+    input[type="text"], input[type="file"], select, textarea { width: 100%; padding: 8px 10px; border-radius: 6px; border: 1px solid #2a2f42; background: #0f1117; color: #f8fafc; font-size: 0.85rem; outline: none; }
+    input[type="text"]:focus, select:focus { border-color: #10b981; }
+    input[type="color"] { width: 100%; height: 36px; border-radius: 6px; border: 1px solid #2a2f42; background: #0f1117; cursor: pointer; }
+
+    .btn-group { display: flex; gap: 8px; }
+    button { flex: 1; background: #10b981; color: #fff; border: none; font-weight: 600; font-size: 0.85rem; padding: 10px; border-radius: 6px; cursor: pointer; transition: 0.15s; }
+    button:hover { background: #059669; }
+    .btn-dark { background: #232734; color: #cbd5e1; }
+    .btn-dark:hover { background: #2e3446; }
+    .btn-danger { background: #ef4444; }
+    .btn-danger:hover { background: #dc2626; }
+
+    textarea { height: 90px; color: #10b981; font-family: 'Courier New', monospace; font-size: 0.75rem; resize: none; }
+
+    /* WORKSPACE */
+    #workspace { flex: 1; display: flex; flex-direction: column; background: #090a0f; }
+    #toolbar { height: 48px; background: #161922; border-bottom: 1px solid #232734; display: flex; align-items: center; justify-content: space-between; padding: 0 20px; font-size: 0.8rem; color: #94a3b8; }
+    #canvas-container { flex: 1; display: flex; align-items: center; justify-content: center; position: relative; overflow: auto; background-image: radial-gradient(#232734 1px, transparent 1px); background-size: 20px 20px; }
+    canvas { background: #12151e; border: 1px solid #2a2f42; border-radius: 8px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); cursor: crosshair; }
+
+    .shortcuts-box { font-size: 0.7rem; color: #64748b; line-height: 1.5; background: #0f1117; padding: 10px; border-radius: 6px; border: 1px solid #1e2230; }
   </style>
 </head>
 <body>
 
+  <!-- SIDEBAR -->
   <div id="sidebar">
-    <h2>1Click HUD Studio</h2>
-    
+    <h2>1Click Studio <span class="badge">PRO</span></h2>
+
+    <div class="section-title">HUD Background</div>
+    <div>
+      <label>Upload HUD Template Image</label>
+      <input type="file" id="bg-upload" accept="image/*">
+    </div>
+
+    <div class="section-title">Button Inspector</div>
     <div>
       <label>Action Type</label>
       <select id="action-type">
@@ -40,39 +65,116 @@
       <input type="text" id="target-face" value="ALL" placeholder="ALL or face index (0,1..)">
     </div>
 
-    <div>
-      <label>Payload (UUID / Vector / Float)</label>
-      <input type="text" id="action-data" placeholder="e.g. uuid or <1,0,0>">
+    <div id="payload-container">
+      <label>Texture UUID</label>
+      <input type="text" id="action-data" placeholder="00000000-0000-0000-0000-000000000000">
     </div>
 
-    <button id="export-btn">Generate HUD Config</button>
-    <button id="clear-btn" class="btn-danger">Clear All</button>
+    <div id="color-picker-box" style="display: none;">
+      <label>Pick Color</label>
+      <input type="color" id="color-picker" value="#ff0000">
+    </div>
 
-    <label>Generated Payload</label>
+    <div class="btn-group">
+      <button id="delete-btn" class="btn-danger">Delete</button>
+      <button id="clear-btn" class="btn-dark">Reset All</button>
+    </div>
+
+    <div class="section-title">Compiler</div>
+    <button id="export-btn">⚡ Generate SL Config</button>
     <textarea id="output-box" readonly placeholder="Output string will appear here..."></textarea>
 
-    <div class="shortcuts-info">
-      <b>Shortcuts:</b><br>
-      • Ctrl + Z: Undo<br>
-      • Ctrl + C / V: Copy / Paste<br>
-      • Ctrl + D: Duplicate<br>
-      • Del / Backspace: Delete Selected
+    <div class="shortcuts-box">
+      <b>Pro Shortcuts:</b><br>
+      • <b>Drag</b> on empty space: Draw new button<br>
+      • <b>Drag</b> existing button: Move position<br>
+      • <b>Ctrl + D</b>: Duplicate selected<br>
+      • <b>Ctrl + Z</b>: Undo action<br>
+      • <b>Del</b>: Delete selected button
     </div>
   </div>
 
-  <div id="canvas-container">
-    <canvas id="hud-canvas" width="600" height="400"></canvas>
+  <!-- WORKSPACE -->
+  <div id="workspace">
+    <div id="toolbar">
+      <span>Workspace: <b>800 x 500 px</b></span>
+      <span id="status-text">Ready</span>
+    </div>
+    <div id="canvas-container">
+      <canvas id="hud-canvas" width="800" height="500"></canvas>
+    </div>
   </div>
 
   <script>
     const canvas = document.getElementById('hud-canvas');
     const ctx = canvas.getContext('2d');
+    
     let buttons = [];
     let history = [];
-    let clipboard = null;
+    let bgImage = null;
     let selectedIndex = -1;
     let isDrawing = false;
+    let isDragging = false;
+    let dragOffsetX = 0, dragOffsetY = 0;
     let startX = 0, startY = 0;
+
+    // UI Elements
+    const actionType = document.getElementById('action-type');
+    const targetFace = document.getElementById('target-face');
+    const actionData = document.getElementById('action-data');
+    const colorPickerBox = document.getElementById('color-picker-box');
+    const colorPicker = document.getElementById('color-picker');
+    const payloadContainer = document.getElementById('payload-container');
+    const statusText = document.getElementById('status-text');
+
+    actionType.addEventListener('change', () => {
+      if (actionType.value === 'COL') {
+        colorPickerBox.style.display = 'block';
+        payloadContainer.style.display = 'none';
+        updateColorPayload();
+      } else {
+        colorPickerBox.style.display = 'none';
+        payloadContainer.style.display = 'block';
+      }
+      syncSelectedButton();
+    });
+
+    colorPicker.addEventListener('input', updateColorPayload);
+
+    function updateColorPayload() {
+      const hex = colorPicker.value;
+      const r = (parseInt(hex.substr(1,2), 16) / 255).toFixed(3);
+      const g = (parseInt(hex.substr(3,2), 16) / 255).toFixed(3);
+      const b = (parseInt(hex.substr(5,2), 16) / 255).toFixed(3);
+      actionData.value = `<${r}, ${g}, ${b}>`;
+      syncSelectedButton();
+    }
+
+    targetFace.addEventListener('input', syncSelectedButton);
+    actionData.addEventListener('input', syncSelectedButton);
+
+    function syncSelectedButton() {
+      if (selectedIndex !== -1 && buttons[selectedIndex]) {
+        buttons[selectedIndex].action = actionType.value;
+        buttons[selectedIndex].face = targetFace.value || 'ALL';
+        buttons[selectedIndex].data = actionData.value;
+        render();
+      }
+    }
+
+    // BG Image Loader
+    document.getElementById('bg-upload').addEventListener('change', (e) => {
+      const file = e.target.files[0];
+      if (file) {
+        const reader = new FileReader();
+        reader.onload = (event) => {
+          bgImage = new Image();
+          bgImage.onload = () => render();
+          bgImage.src = event.target.result;
+        };
+        reader.readAsDataURL(file);
+      }
+    });
 
     function saveState() {
       history.push(JSON.stringify(buttons));
@@ -81,16 +183,23 @@
 
     function render() {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      if (bgImage) {
+        ctx.drawImage(bgImage, 0, 0, canvas.width, canvas.height);
+      }
+
       buttons.forEach((btn, index) => {
         const isSelected = index === selectedIndex;
-        ctx.fillStyle = isSelected ? 'rgba(229, 66, 66, 0.3)' : 'rgba(0, 179, 126, 0.3)';
-        ctx.strokeStyle = isSelected ? '#e54242' : '#00b37e';
-        ctx.lineWidth = isSelected ? 3 : 2;
+        ctx.fillStyle = isSelected ? 'rgba(16, 185, 129, 0.4)' : 'rgba(59, 130, 246, 0.3)';
+        ctx.strokeStyle = isSelected ? '#10b981' : '#3b82f6';
+        ctx.lineWidth = isSelected ? 3 : 1.5;
+
         ctx.fillRect(btn.x, btn.y, btn.w, btn.h);
         ctx.strokeRect(btn.x, btn.y, btn.w, btn.h);
+
         ctx.fillStyle = '#ffffff';
-        ctx.font = '12px sans-serif';
-        ctx.fillText(`BTN_${index + 1} (${btn.action})`, btn.x + 6, btn.y + 18);
+        ctx.font = 'bold 11px Inter, sans-serif';
+        ctx.fillText(btn.id, btn.x + 6, btn.y + 16);
       });
     }
 
@@ -101,18 +210,30 @@
 
     canvas.addEventListener('mousedown', (e) => {
       const pos = getMousePos(e);
-      // check if clicked on existing button
-      let clickedIndex = -1;
+      let clicked = -1;
+
       for (let i = buttons.length - 1; i >= 0; i--) {
         const b = buttons[i];
         if (pos.x >= b.x && pos.x <= b.x + b.w && pos.y >= b.y && pos.y <= b.y + b.h) {
-          clickedIndex = i;
+          clicked = i;
           break;
         }
       }
 
-      if (clickedIndex !== -1) {
-        selectedIndex = clickedIndex;
+      if (clicked !== -1) {
+        selectedIndex = clicked;
+        isDragging = true;
+        dragOffsetX = pos.x - buttons[clicked].x;
+        dragOffsetY = pos.y - buttons[clicked].y;
+        
+        // update inspector
+        const b = buttons[clicked];
+        actionType.value = b.action;
+        targetFace.value = b.face;
+        actionData.value = b.data;
+        actionType.dispatchEvent(new Event('change'));
+
+        statusText.innerText = `Selected: ${b.id}`;
         render();
         return;
       }
@@ -124,34 +245,48 @@
       render();
     });
 
-    canvas.addEventListener('mouseup', (e) => {
-      if (!isDrawing) return;
-      isDrawing = false;
+    canvas.addEventListener('mousemove', (e) => {
       const pos = getMousePos(e);
-      const w = pos.x - startX;
-      const h = pos.y - startY;
-
-      if (Math.abs(w) > 15 && Math.abs(h) > 15) {
-        saveState();
-        buttons.push({
-          id: `btn_${buttons.length + 1}`,
-          x: Math.min(startX, pos.x),
-          y: Math.min(startY, pos.y),
-          w: Math.abs(w),
-          h: Math.abs(h),
-          action: document.getElementById('action-type').value,
-          face: document.getElementById('target-face').value || 'ALL',
-          data: document.getElementById('action-data').value || '00000000-0000-0000-0000-000000000000'
-        });
-        selectedIndex = buttons.length - 1;
+      if (isDragging && selectedIndex !== -1) {
+        buttons[selectedIndex].x = pos.x - dragOffsetX;
+        buttons[selectedIndex].y = pos.y - dragOffsetY;
         render();
+      }
+    });
+
+    canvas.addEventListener('mouseup', (e) => {
+      if (isDragging) {
+        isDragging = false;
+        saveState();
+      }
+      if (isDrawing) {
+        isDrawing = false;
+        const pos = getMousePos(e);
+        const w = pos.x - startX;
+        const h = pos.y - startY;
+
+        if (Math.abs(w) > 15 && Math.abs(h) > 15) {
+          saveState();
+          const newBtn = {
+            id: `btn_${buttons.length + 1}`,
+            x: Math.min(startX, pos.x),
+            y: Math.min(startY, pos.y),
+            w: Math.abs(w),
+            h: Math.abs(h),
+            action: actionType.value,
+            face: targetFace.value || 'ALL',
+            data: actionData.value || '00000000-0000-0000-0000-000000000000'
+          };
+          buttons.push(newBtn);
+          selectedIndex = buttons.length - 1;
+          render();
+        }
       }
     });
 
     window.addEventListener('keydown', (e) => {
       const isCtrl = e.ctrlKey || e.metaKey;
 
-      // Undo: Ctrl + Z
       if (isCtrl && e.key.toLowerCase() === 'z') {
         e.preventDefault();
         if (history.length > 0) {
@@ -161,41 +296,17 @@
         }
       }
 
-      // Copy: Ctrl + C
-      if (isCtrl && e.key.toLowerCase() === 'c') {
-        if (selectedIndex !== -1 && buttons[selectedIndex]) {
-          clipboard = { ...buttons[selectedIndex] };
-        }
-      }
-
-      // Paste: Ctrl + V
-      if (isCtrl && e.key.toLowerCase() === 'v') {
-        if (clipboard) {
-          saveState();
-          buttons.push({
-            ...clipboard,
-            id: `btn_${buttons.length + 1}`,
-            x: clipboard.x + 20,
-            y: clipboard.y + 20
-          });
-          selectedIndex = buttons.length - 1;
-          render();
-        }
-      }
-
-      // Duplicate: Ctrl + D
       if (isCtrl && e.key.toLowerCase() === 'd') {
         e.preventDefault();
         if (selectedIndex !== -1 && buttons[selectedIndex]) {
           saveState();
           const target = buttons[selectedIndex];
-          buttons.push({ ...target, id: `btn_${buttons.length + 1}`, x: target.x + 15, y: target.y + 15 });
+          buttons.push({ ...target, id: `btn_${buttons.length + 1}`, x: target.x + 20, y: target.y + 20 });
           selectedIndex = buttons.length - 1;
           render();
         }
       }
 
-      // Delete: Delete or Backspace
       if (e.key === 'Delete' || e.key === 'Backspace') {
         if (selectedIndex !== -1 && document.activeElement.tagName !== 'INPUT' && document.activeElement.tagName !== 'TEXTAREA') {
           e.preventDefault();
@@ -207,8 +318,16 @@
       }
     });
 
+    document.getElementById('delete-btn').addEventListener('click', () => {
+      if (selectedIndex !== -1) {
+        saveState();
+        buttons.splice(selectedIndex, 1);
+        selectedIndex = -1;
+        render();
+      }
+    });
+
     document.getElementById('clear-btn').addEventListener('click', () => {
-      if (buttons.length === 0) return;
       saveState();
       buttons = [];
       selectedIndex = -1;
