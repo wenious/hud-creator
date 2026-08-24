@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>1Click HUD Studio - Visual Builder</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', sans-serif; }
+    body { display: flex; height: 100vh; background: #121214; color: #e1e1e6; }
+    #sidebar { width: 320px; background: #202024; padding: 20px; border-right: 1px solid #323238; display: flex; flex-direction: column; gap: 16px; }
+    #canvas-container { flex: 1; display: flex; align-items: center; justify-content: center; background: #09090a; position: relative; overflow: hidden; }
+    canvas { background: #18181b; border: 2px dashed #3f3f46; border-radius: 8px; cursor: crosshair; }
+    h2 { font-size: 1.1rem; color: #00b37e; text-transform: uppercase; letter-spacing: 1px; }
+    label { font-size: 0.85rem; color: #a8a8b3; }
+    input, select, button { width: 100%; padding: 10px; border-radius: 6px; border: 1px solid #323238; background: #121214; color: #fff; outline: none; }
+    button { background: #00b37e; border: none; font-weight: bold; cursor: pointer; transition: 0.2s; }
+    button:hover { background: #00875f; }
+    .btn-secondary { background: #323238; }
+    .btn-secondary:hover { background: #3f3f46; }
+    textarea { width: 100%; height: 100px; background: #121214; border: 1px solid #323238; color: #00b37e; font-family: monospace; font-size: 0.8rem; padding: 8px; border-radius: 6px; resize: none; }
+  </style>
+</head>
+<body>
+
+  <div id="sidebar">
+    <h2>1Click HUD Studio</h2>
+    
+    <div>
+      <label>Action Type</label>
+      <select id="action-type">
+        <option value="TEX">Texture (UUID)</option>
+        <option value="COL">Color (RGB Tint)</option>
+        <option value="ALP">Alpha (Opacity)</option>
+      </select>
+    </div>
+
+    <div>
+      <label>Target Face</label>
+      <input type="text" id="target-face" value="ALL" placeholder="ALL or face index (0,1..)">
+    </div>
+
+    <div>
+      <label>Payload (UUID / Vector / Float)</label>
+      <input type="text" id="action-data" placeholder="e.g. uuid or <1,0,0>">
+    </div>
+
+    <button id="add-btn" class="btn-secondary">+ Add Button Mode</button>
+    <button id="export-btn">Generate HUD Config</button>
+
+    <label>Generated Payload</label>
+    <textarea id="output-box" readonly placeholder="Output string will appear here..."></textarea>
+  </div>
+
+  <div id="canvas-container">
+    <canvas id="hud-canvas" width="600" height="400"></canvas>
+  </div>
+
+  <script>
+    const canvas = document.getElementById('hud-canvas');
+    const ctx = canvas.getContext('2d');
+    let buttons = [];
+    let isDrawing = false;
+    let startX = 0, startY = 0;
+
+    function render() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      buttons.forEach((btn, index) => {
+        ctx.fillStyle = 'rgba(0, 179, 126, 0.3)';
+        ctx.strokeStyle = '#00b37e';
+        ctx.lineWidth = 2;
+        ctx.fillRect(btn.x, btn.y, btn.w, btn.h);
+        ctx.strokeRect(btn.x, btn.y, btn.w, btn.h);
+        ctx.fillStyle = '#ffffff';
+        ctx.font = '12px sans-serif';
+        ctx.fillText(`BTN_${index + 1} (${btn.action})`, btn.x + 6, btn.y + 18);
+      });
+    }
+
+    canvas.addEventListener('mousedown', (e) => {
+      const rect = canvas.getBoundingClientRect();
+      startX = e.clientX - rect.left;
+      startY = e.clientY - rect.top;
+      isDrawing = true;
+    });
+
+    canvas.addEventListener('mouseup', (e) => {
+      if (!isDrawing) return;
+      isDrawing = false;
+      const rect = canvas.getBoundingClientRect();
+      const endX = e.clientX - rect.left;
+      const endY = e.clientY - rect.top;
+
+      const w = endX - startX;
+      const h = endY - startY;
+
+      if (Math.abs(w) > 15 && Math.abs(h) > 15) {
+        buttons.push({
+          id: `btn_${buttons.length + 1}`,
+          x: Math.min(startX, endX),
+          y: Math.min(startY, endY),
+          w: Math.abs(w),
+          h: Math.abs(h),
+          action: document.getElementById('action-type').value,
+          face: document.getElementById('target-face').value || 'ALL',
+          data: document.getElementById('action-data').value || '00000000-0000-0000-0000-000000000000'
+        });
+        render();
+      }
+    });
+
+    // keyboard shortcut: duplicate last button
+    window.addEventListener('keydown', (e) => {
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'd') {
+        e.preventDefault();
+        if (buttons.length > 0) {
+          const last = buttons[buttons.length - 1];
+          buttons.push({ ...last, id: `btn_${buttons.length + 1}`, x: last.x + 20, y: last.y + 20 });
+          render();
+        }
+      }
+    });
+
+    // export configuration payload for sl lsl engine
+    document.getElementById('export-btn').addEventListener('click', () => {
+      let outputLines = [];
+      buttons.forEach(btn => {
+        outputLines.push(`${btn.id}=${btn.action}|${btn.face}|${btn.data}`);
+      });
+      document.getElementById('output-box').value = outputLines.join('\n');
+    });
+
+    render();
+  </script>
+</body>
+</html>
