@@ -8,7 +8,6 @@
     * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; }
     body { display: flex; height: 100vh; background: #0f1117; color: #e1e7ec; user-select: none; overflow: hidden; }
     
-    /* SIDEBAR */
     #sidebar { width: 340px; background: #161922; padding: 20px; border-right: 1px solid #232734; display: flex; flex-direction: column; gap: 14px; overflow-y: auto; z-index: 10; box-shadow: 2px 0 10px rgba(0,0,0,0.3); }
     h2 { font-size: 1.1rem; color: #10b981; font-weight: 700; display: flex; align-items: center; gap: 8px; }
     .badge { font-size: 0.65rem; background: #10b98122; color: #10b981; padding: 2px 6px; border-radius: 4px; border: 1px solid #10b98155; }
@@ -18,8 +17,8 @@
     input[type="text"], input[type="file"], select, textarea { width: 100%; padding: 8px 10px; border-radius: 6px; border: 1px solid #2a2f42; background: #0f1117; color: #f8fafc; font-size: 0.85rem; outline: none; }
     input[type="text"]:focus, select:focus { border-color: #10b981; }
     
-    .color-row { display: flex; gap: 8px; align-items: center; }
-    input[type="color"] { width: 50px; height: 38px; border-radius: 6px; border: 1px solid #2a2f42; background: #0f1117; cursor: pointer; padding: 2px; }
+    .color-row { display: flex; gap: 10px; align-items: center; }
+    input[type="color"] { width: 55px; height: 38px; border-radius: 6px; border: 1px solid #2a2f42; background: #0f1117; cursor: pointer; padding: 2px; }
 
     .btn-group { display: flex; gap: 8px; }
     button { flex: 1; background: #10b981; color: #fff; border: none; font-weight: 600; font-size: 0.85rem; padding: 10px; border-radius: 6px; cursor: pointer; transition: 0.15s; }
@@ -31,7 +30,6 @@
 
     textarea { height: 90px; color: #10b981; font-family: 'Courier New', monospace; font-size: 0.75rem; resize: none; }
 
-    /* WORKSPACE */
     #workspace { flex: 1; display: flex; flex-direction: column; background: #090a0f; }
     #toolbar { height: 48px; background: #161922; border-bottom: 1px solid #232734; display: flex; align-items: center; justify-content: space-between; padding: 0 20px; font-size: 0.8rem; color: #94a3b8; }
     #canvas-container { flex: 1; display: flex; align-items: center; justify-content: center; position: relative; overflow: auto; background-image: radial-gradient(#232734 1px, transparent 1px); background-size: 20px 20px; }
@@ -42,17 +40,21 @@
 </head>
 <body>
 
-  <!-- SIDEBAR -->
   <div id="sidebar">
     <h2>1Click Studio <span class="badge">PRO</span></h2>
 
     <div class="section-title">HUD Background</div>
     <div>
-      <label>Upload HUD Template Image</label>
+      <label>Upload HUD Template</label>
       <input type="file" id="bg-upload" accept="image/*">
     </div>
 
-    <div class="section-title">Button Inspector</div>
+    <div class="section-title">Selected Button Properties</div>
+    <div>
+      <label>Button ID</label>
+      <input type="text" id="btn-id" readonly placeholder="Select a button">
+    </div>
+
     <div>
       <label>Action Type</label>
       <select id="action-type">
@@ -62,22 +64,22 @@
       </select>
     </div>
 
-    <div>
-      <label>Color Picker (Click Box)</label>
+    <div id="color-section">
+      <label>Button Color</label>
       <div class="color-row">
-        <input type="color" id="color-picker" value="#ff0000">
-        <span style="font-size: 0.8rem; color: #94a3b8;">Choose Tint</span>
+        <input type="color" id="color-picker" value="#3b82f6">
+        <span id="hex-label" style="font-size: 0.8rem; color: #94a3b8;">#3b82f6</span>
       </div>
     </div>
 
     <div>
       <label>Target Face</label>
-      <input type="text" id="target-face" value="ALL" placeholder="ALL or face index (0,1..)">
+      <input type="text" id="target-face" value="ALL" placeholder="ALL or 0,1,2...">
     </div>
 
     <div>
-      <label>Payload (UUID / Vector / Value)</label>
-      <input type="text" id="action-data" value="<1.000, 0.000, 0.000>">
+      <label>Payload (UUID / Color Vector)</label>
+      <input type="text" id="action-data" value="<0.231, 0.510, 0.965>">
     </div>
 
     <div class="btn-group">
@@ -90,20 +92,19 @@
     <textarea id="output-box" readonly placeholder="Output string will appear here..."></textarea>
 
     <div class="shortcuts-box">
-      <b>Shortcuts:</b><br>
-      • <b>Drag</b> empty space: Draw button<br>
-      • <b>Drag</b> button: Move position<br>
-      • <b>Ctrl + D</b>: Duplicate<br>
-      • <b>Ctrl + Z</b>: Undo<br>
-      • <b>Del</b>: Delete selected
+      <b>Controls:</b><br>
+      • <b>Click Button</b>: Edit color/data on sidebar<br>
+      • <b>Drag Empty</b>: Draw new button<br>
+      • <b>Drag Button</b>: Move position<br>
+      • <b>Ctrl + D</b>: Duplicate selected<br>
+      • <b>Ctrl + Z</b>: Undo | <b>Del</b>: Delete
     </div>
   </div>
 
-  <!-- WORKSPACE -->
   <div id="workspace">
     <div id="toolbar">
       <span>Workspace: <b>800 x 500 px</b></span>
-      <span id="status-text">Ready</span>
+      <span id="status-text" style="color: #10b981; font-weight: 600;">Ready</span>
     </div>
     <div id="canvas-container">
       <canvas id="hud-canvas" width="800" height="500"></canvas>
@@ -123,43 +124,87 @@
     let dragOffsetX = 0, dragOffsetY = 0;
     let startX = 0, startY = 0;
 
+    const btnIdInput = document.getElementById('btn-id');
     const actionType = document.getElementById('action-type');
     const targetFace = document.getElementById('target-face');
     const actionData = document.getElementById('action-data');
     const colorPicker = document.getElementById('color-picker');
+    const hexLabel = document.getElementById('hex-label');
     const statusText = document.getElementById('status-text');
 
-    function hexToSLVector(hex) {
+    function hexToVector(hex) {
       const r = (parseInt(hex.substr(1,2), 16) / 255).toFixed(3);
       const g = (parseInt(hex.substr(3,2), 16) / 255).toFixed(3);
       const b = (parseInt(hex.substr(5,2), 16) / 255).toFixed(3);
       return `<${r}, ${g}, ${b}>`;
     }
 
+    function vectorToHex(vecStr) {
+      const match = vecStr.match(/<([\d.]+),\s*([\d.]+),\s*([\d.]+)\>/);
+      if (!match) return '#3b82f6';
+      const r = Math.round(parseFloat(match[1]) * 255).toString(16).padStart(2, '0');
+      const g = Math.round(parseFloat(match[2]) * 255).toString(16).padStart(2, '0');
+      const b = Math.round(parseFloat(match[3]) * 255).toString(16).padStart(2, '0');
+      return `#${r}${g}${b}`;
+    }
+
+    function updateInspector(index) {
+      if (index >= 0 && index < buttons.length) {
+        const b = buttons[index];
+        btnIdInput.value = b.id;
+        actionType.value = b.action;
+        targetFace.value = b.face;
+        actionData.value = b.data;
+        colorPicker.value = b.colorHex || '#3b82f6';
+        hexLabel.innerText = colorPicker.value;
+        statusText.innerText = `Active: ${b.id}`;
+      } else {
+        btnIdInput.value = '';
+        statusText.innerText = 'No button selected';
+      }
+    }
+
     colorPicker.addEventListener('input', () => {
-      actionType.value = 'COL';
-      actionData.value = hexToSLVector(colorPicker.value);
-      syncSelectedButton();
+      hexLabel.innerText = colorPicker.value;
+      if (selectedIndex !== -1 && buttons[selectedIndex]) {
+        buttons[selectedIndex].colorHex = colorPicker.value;
+        if (buttons[selectedIndex].action === 'COL') {
+          buttons[selectedIndex].data = hexToVector(colorPicker.value);
+          actionData.value = buttons[selectedIndex].data;
+        }
+        render();
+      }
     });
 
     actionType.addEventListener('change', () => {
-      if (actionType.value === 'COL') {
-        actionData.value = hexToSLVector(colorPicker.value);
-      }
-      syncSelectedButton();
-    });
-
-    targetFace.addEventListener('input', syncSelectedButton);
-    actionData.addEventListener('input', syncSelectedButton);
-
-    function syncSelectedButton() {
       if (selectedIndex !== -1 && buttons[selectedIndex]) {
         buttons[selectedIndex].action = actionType.value;
-        buttons[selectedIndex].face = targetFace.value || 'ALL';
-        buttons[selectedIndex].data = actionData.value;
+        if (actionType.value === 'COL') {
+          buttons[selectedIndex].data = hexToVector(colorPicker.value);
+          actionData.value = buttons[selectedIndex].data;
+        }
         render();
       }
-    }
+    });
+
+    targetFace.addEventListener('input', () => {
+      if (selectedIndex !== -1 && buttons[selectedIndex]) {
+        buttons[selectedIndex].face = targetFace.value || 'ALL';
+      }
+    });
+
+    actionData.addEventListener('input', () => {
+      if (selectedIndex !== -1 && buttons[selectedIndex]) {
+        buttons[selectedIndex].data = actionData.value;
+        if (buttons[selectedIndex].action === 'COL') {
+          const hex = vectorToHex(actionData.value);
+          buttons[selectedIndex].colorHex = hex;
+          colorPicker.value = hex;
+          hexLabel.innerText = hex;
+        }
+        render();
+      }
+    });
 
     document.getElementById('bg-upload').addEventListener('change', (e) => {
       const file = e.target.files[0];
@@ -188,16 +233,24 @@
 
       buttons.forEach((btn, index) => {
         const isSelected = index === selectedIndex;
-        ctx.fillStyle = isSelected ? 'rgba(16, 185, 129, 0.45)' : 'rgba(59, 130, 246, 0.35)';
-        ctx.strokeStyle = isSelected ? '#10b981' : '#3b82f6';
-        ctx.lineWidth = isSelected ? 3 : 1.5;
-
+        const hex = btn.colorHex || '#3b82f6';
+        
+        ctx.save();
+        ctx.fillStyle = hex;
+        ctx.globalAlpha = isSelected ? 0.85 : 0.45;
         ctx.fillRect(btn.x, btn.y, btn.w, btn.h);
+
+        ctx.globalAlpha = 1.0;
+        ctx.strokeStyle = isSelected ? '#ffffff' : hex;
+        ctx.lineWidth = isSelected ? 3 : 1.5;
         ctx.strokeRect(btn.x, btn.y, btn.w, btn.h);
 
         ctx.fillStyle = '#ffffff';
         ctx.font = 'bold 11px Inter, sans-serif';
+        ctx.shadowColor = 'rgba(0,0,0,0.8)';
+        ctx.shadowBlur = 4;
         ctx.fillText(btn.id, btn.x + 6, btn.y + 16);
+        ctx.restore();
       });
     }
 
@@ -223,18 +276,13 @@
         isDragging = true;
         dragOffsetX = pos.x - buttons[clicked].x;
         dragOffsetY = pos.y - buttons[clicked].y;
-        
-        const b = buttons[clicked];
-        actionType.value = b.action;
-        targetFace.value = b.face;
-        actionData.value = b.data;
-
-        statusText.innerText = `Selected: ${b.id}`;
+        updateInspector(selectedIndex);
         render();
         return;
       }
 
       selectedIndex = -1;
+      updateInspector(-1);
       startX = pos.x;
       startY = pos.y;
       isDrawing = true;
@@ -263,6 +311,8 @@
 
         if (Math.abs(w) > 15 && Math.abs(h) > 15) {
           saveState();
+          const currentHex = colorPicker.value;
+          const currentVec = hexToVector(currentHex);
           const newBtn = {
             id: `btn_${buttons.length + 1}`,
             x: Math.min(startX, pos.x),
@@ -271,10 +321,12 @@
             h: Math.abs(h),
             action: actionType.value,
             face: targetFace.value || 'ALL',
-            data: actionData.value || '<1.000, 0.000, 0.000>'
+            colorHex: currentHex,
+            data: actionType.value === 'COL' ? currentVec : actionData.value
           };
           buttons.push(newBtn);
           selectedIndex = buttons.length - 1;
+          updateInspector(selectedIndex);
           render();
         }
       }
@@ -288,6 +340,7 @@
         if (history.length > 0) {
           buttons = JSON.parse(history.pop());
           selectedIndex = -1;
+          updateInspector(-1);
           render();
         }
       }
@@ -297,8 +350,14 @@
         if (selectedIndex !== -1 && buttons[selectedIndex]) {
           saveState();
           const target = buttons[selectedIndex];
-          buttons.push({ ...target, id: `btn_${buttons.length + 1}`, x: target.x + 20, y: target.y + 20 });
+          buttons.push({ 
+            ...target, 
+            id: `btn_${buttons.length + 1}`, 
+            x: target.x + 20, 
+            y: target.y + 20 
+          });
           selectedIndex = buttons.length - 1;
+          updateInspector(selectedIndex);
           render();
         }
       }
@@ -309,6 +368,7 @@
           saveState();
           buttons.splice(selectedIndex, 1);
           selectedIndex = -1;
+          updateInspector(-1);
           render();
         }
       }
@@ -319,6 +379,7 @@
         saveState();
         buttons.splice(selectedIndex, 1);
         selectedIndex = -1;
+        updateInspector(-1);
         render();
       }
     });
@@ -327,6 +388,7 @@
       saveState();
       buttons = [];
       selectedIndex = -1;
+      updateInspector(-1);
       render();
     });
 
